@@ -39,7 +39,7 @@
                 var score = 0;
 
                 //Socket IO Events
-                socket = io.connect('http://localhost:3000', {reconnect: true});
+                socket = io.connect('https://tmnt-chat.herokuapp.com/', {reconnect: true});
                 socket.on('getMyId', function(myid) {
                     localStorage.setItem('clientid', myid);
                     
