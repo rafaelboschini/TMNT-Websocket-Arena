@@ -1,52 +1,89 @@
 <html>
     <head>
-        <meta charset="UTF-8" >
-        <script src="https://code.jquery.com/jquery-3.5.1.min.js" integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
-        
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge,chrome=1">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
         <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.1.0/socket.io.js" integrity="sha512-+l9L4lMTFNy3dEglQpprf7jQBhQsQ3/WvOnjaN/+/L4i0jOstgScV0q2TjfvRF4V+ZePMDuZYIQtg5T4MKr+MQ==" crossorigin="anonymous"></script>
         <style>
+            @font-face {
+                font-family: Chlorinar;
+                src: url('assets/fonts/CHLORINR.TTF');
+            }
             body{
                 background-color: #2869c3;
+                overflow:hidden;
             }
 
             canvas {
                 margin: auto;
                 display: block;
-                zoom: 130%
+                zoom: 130%;
             }
+
+            .title{
+                font-family: Chlorinar;
+                text-align:center;    
+                margin-top:20px; 
+            }
+
+            .title h1 {
+                font-size: 110px;
+                line-height: 100px;
+                color: white;
+                margin: 0px;
+                font-weight:normal;
+            }
+
         </style>
     </head>
     <body>
+        <div class="title">
+            <h1>#</h1>
+        </div>
         <canvas id="canvas" width="500px" height="500px"></canvas>
+        <img src="assets/images/player1.png" id="raphael" rel="prefetch" style="display:none"/>
+        <img src="assets/images/player2.png" id="leonardo" rel="prefetch" style="display:none"/>
+        <img src="assets/images/player3.png" id="donatello" rel="prefetch" style="display:none"/>
+        <img src="assets/images/player4.png" id="michelangelo" rel="prefetch" style="display:none"/>
+        <img src="assets/images/ghost.png" id="ghost" rel="prefetch" style="display:none"/>
+        <img src="assets/images/splinter.png" id="splinterImg" rel="prefetch" style="display:none"/>
+        <img src="assets/images/pizza.png" id="pizzasImg" rel="prefetch" style="display:none"/>
+        <img src="assets/images/island.jpg" id="islandImg" rel="prefetch" style="display:none"/>
+        <img src="assets/images/chars.png" id="charsImg" rel="prefetch" style="display:none"/>
         <script type="text/javascript">
-            var players = [];
-
             window.onload = function() {
                 'use strict';
                 
+                var players = [];
                 var socket = undefined;
                 var canvas = document.getElementById('canvas');
                 var ctx = canvas.getContext('2d');
                 var w = document.getElementById('canvas').offsetWidth;
                 var h = document.getElementById('canvas').offsetHeight;
-                var terrainImageLoaded = false,
-                    houseImageLoaded = false,
-                    pokeballImageLoaded = false,
-                    playerImageLoaded = false;
                 var objectSizes = 20;
                 var speed = 100;
                 var modifier = 100;
-                var score = 0;
+
+                var masterImage = document.getElementById('splinterImg'),
+                    raphaelImage = document.getElementById('raphael'),
+                    leonardoImage = document.getElementById('leonardo'),
+                    donatelloImage = document.getElementById('donatello'),
+                    michelangeloImage = document.getElementById('michelangelo'),
+                    ghostImage = document.getElementById('ghost'),
+                    pizzaImage = document.getElementById('pizzasImg'),
+                    terrainImage = document.getElementById('islandImg'),
+                    charsImage = document.getElementById('charsImg');
 
                 //Socket IO Events
-                socket = io.connect('https://tmnt-chat.herokuapp.com/', {reconnect: true});
-                socket.on('getMyId', function(myid) {
-                    localStorage.setItem('clientid', myid);
-                    
+                socket = io.connect(location.href, {reconnect: true});
+                socket.on('token', function(token) {
+                    localStorage.setItem('clientid', token);
+
                     if(players.length==0)
                     {
                         players.push({
-                            clientid: myid,
+                            score:0,
+                            clientid: token,
                             posX: 13,
                             posY: 13
                         });
@@ -55,74 +92,30 @@
                     }
                 });
 
-                socket.on('receivedMessage', function(playersUpdated) {
-                    players = playersUpdated;                    
+                socket.on('updatePlayers', function(playersUpdated) {
+                    players = playersUpdated;       
                     update();
                 });
 
-                //terrain image
-                var terrainImage = new Image();
-                terrainImage.onload = function() {
-                    terrainImageLoaded = true;
-                    assetsLoaded();
-                };
-                terrainImage.src = 'assets/images/island.jpg';
-
-                //house image
-                var houseImage = new Image();
-                houseImage.onload = function() {
-                    houseImageLoaded = true;
-                    assetsLoaded();
-                };
-                houseImage.src = 'assets/images/house.png';
-
-                //main sound
-                var mainTheme = new Audio('https://drive.google.com/uc?id=1ljrlJ1UBrH4YnIpxH02jqR_oJeLZhkDv');
-                mainTheme.loop = true;
-                mainTheme.volume = 0.5;
-                //mainTheme.play(); For God sake NO!
-
-                //pokeball-selection
-                var pokePick = new Audio('https://drive.google.com/uc?id=1ULOY_JeGQWJ0SOcxQfBtNQ77e20sWa31');
-                pokePick.volume = 0;
-
-                //player image
-                var playerImage = new Image();
-                playerImage.onload = function() {
-                    pokeballImageLoaded = true;
-                    assetsLoaded();
-                };
-                playerImage.src = 'assets/images/player.png';
-
-                //pokeball image
-                var pokeballImage = new Image();
-                pokeballImage.onload = function() {
-                    playerImageLoaded = true;
-                    assetsLoaded();
-                };
-                pokeballImage.src = 'https://drive.google.com/uc?id=1XiXaiRlytnRI2ncwnBWyyef79guxI55X';
+                socket.on('pizzaLocation', function(pizzasLoc) {
+                    pizza.x = pizzasLoc.x;
+                    pizza.y  = pizzasLoc.y;
+                    pizza.spritePosition = pizzasLoc.spritePosition;
+                });
 
                 /**
                  * It will hold all the pockeball data like x and y axis position
-                 * sprite position and item distance is for determine which item is selected from the sprite - @todo future use for knowing on score which one player picked
+                 * sprite position and item distance is for determine which item is selected from the sprite - 
+                 * @todo future use for knowing on score which one player picked
                  * Also hold the generate position function that generates random positions if there is no collision.
                  * @Object
-                 * @name pokeball
+                 * @name pizza
                  */
-                var pokeball = {
+                var pizza = {
                     x: 0,
                     y: 0,
                     spritePosition: 0,
                     spriteItemDistance: 33,
-                };
-
-                pokeball.generatePosition = function() {
-                    do {
-                        pokeball.x = Math.floor(Math.random() * 20) + 1;
-                        pokeball.y = Math.floor(Math.random() * 16) + 4;
-                    } while (check_collision(pokeball.x, pokeball.y));
-
-                    pokeball.spritePosition = Math.floor(Math.random() * 4) + 0; // get position from 0-4
                 };
 
                 canvas.addEventListener('mousedown', function(event) {
@@ -134,7 +127,7 @@
                  * I have also incuded an object to hold the sprite position of each movement so i can call them
                  * I also included the move function in order to move the player - all the functionality for the movement is in there
                  * @Object
-                 * @name pokeball
+                 * @name player
                  */
                 var player = {
                     x: Math.round(w / 2 / objectSizes),
@@ -179,6 +172,7 @@
                         },
                     },
                 };
+                
                 player.move = function(direction) {
                     /**
                      * A temporary object to hold the current x, y so if there is a collision with the new coordinates to fallback here
@@ -194,55 +188,19 @@
                     switch (direction) {
                         case 'left':
                             player.x -= speed / modifier;
-                            if (player.currentDirection == 'stand') {
-                                player.currentDirection = 'left-1';
-                            } else if (player.currentDirection == 'left-1') {
-                                player.currentDirection = 'left-2';
-                            } else if (player.currentDirection == 'left-2') {
-                                player.currentDirection = 'left-1';
-                            } else {
-                                player.currentDirection = 'left-1';
-                            }
+                            player.currentDirection = (player.currentDirection === 'left-1' ? 'left-2' : 'left-1');
                             break;
                         case 'right':
                             player.x += speed / modifier;
-                            if (player.currentDirection == 'stand') {
-                                player.currentDirection = 'right-1';
-                            } else if (player.currentDirection == 'right-1') {
-                                player.currentDirection = 'right-2';
-                            } else if (player.currentDirection == 'right-2') {
-                                player.currentDirection = 'right-1';
-                            } else {
-                                player.currentDirection = 'right-1';
-                            }
+                            player.currentDirection = (player.currentDirection === 'right-1' ? 'right-2' : 'right-1');
                             break;
                         case 'up':
                             player.y -= speed / modifier;
-
-                            if (player.currentDirection == 'stand') {
-                                player.currentDirection = 'up-1';
-                            } else if (player.currentDirection == 'up-1') {
-                                player.currentDirection = 'up-2';
-                            } else if (player.currentDirection == 'up-2') {
-                                player.currentDirection = 'up-1';
-                            } else {
-                                player.currentDirection = 'up-1';
-                            }
-
+                            player.currentDirection = (player.currentDirection === 'up-1' ? 'up-2' : 'up-1');
                             break;
                         case 'down':
                             player.y += speed / modifier;
-
-                            if (player.currentDirection == 'stand') {
-                                player.currentDirection = 'down-1';
-                            } else if (player.currentDirection == 'down-1') {
-                                player.currentDirection = 'down-2';
-                            } else if (player.currentDirection == 'down-2') {
-                                player.currentDirection = 'down-1';
-                            } else {
-                                player.currentDirection = 'down-1';
-                            }
-
+                            player.currentDirection = (player.currentDirection === 'down-1' ? 'down-2' : 'down-1');
                             break;
                     }
 
@@ -255,25 +213,27 @@
                     }
 
                     /**
-                     * If player finds the coordinates of pokeball the generate new one, play the sound and update the score
+                     * If player finds the coordinates of pizza the generate new one, play the sound and update the score
                      */
-                    if (player.x == pokeball.x && player.y == pokeball.y) {
-                        // found a pokeball !! create a new one
-                        console.log('found a pokeball of ' + pokeball.spritePosition + '! Bravo! ');
-                        pokePick.pause();
-                        pokePick.currentTime = 0;
-                        pokePick.play();
-                        score += 1;
-                        pokeball.generatePosition();
+                    var play = players.filter(function(item){
+                        return item.userId === localStorage.getItem('clientid');
+                    });
+
+                    //COWABUNGA!!!
+                    if (player.x == pizza.x && player.y == pizza.y && play.length > 0 && play[0].skin !== 'ghost') { 
+                        socket.emit('catch');
                     }
 
-                    //send position data to socket
-                    socket.emit('sendMessage', {
+                    /**
+                     * Send position data to server with websocket
+                     */
+                    socket.emit('sendPos', {
                         clientTimestamp: Date.now(),
                         posX: player.x,
                         posY: player.y,
                         dirX: player.direction[player.currentDirection].x,
                         dirY: player.direction[player.currentDirection].y,
+                        score: player.score,
                     });
                 };
 
@@ -284,39 +244,62 @@
                  */
                 function update() {
                     ctx.drawImage(terrainImage, 0, 0);
-                    ctx.drawImage(houseImage, 80, 60);
+                    ctx.drawImage(masterImage, 80, 60);
 
                     //Genboard
                     board();
 
-                    //pokeball
-                    ctx.drawImage(
-                        pokeballImage,
-                        pokeball.spritePosition * pokeball.spriteItemDistance,
-                        0,
-                        objectSizes,
-                        objectSizes,
-                        pokeball.x * objectSizes,
-                        pokeball.y * objectSizes,
-                        objectSizes,
-                        objectSizes
-                    );
-
-                    $.each(players,(idx, item) => {
+                    //pizza
+                    if(pizza.x > 0 && pizza.y > 0)
                         ctx.drawImage(
-                            playerImage,
-                            item.dirX,
-                            item.dirY,
+                            pizzaImage,
+                            pizza.spritePosition * pizza.spriteItemDistance,
+                            0,
+                            objectSizes,
+                            objectSizes,
+                            pizza.x * objectSizes,
+                            pizza.y * objectSizes,
+                            objectSizes*1.5,
+                            objectSizes*1.5
+                        );
+
+                    //draw players
+                    for(var x=0; x < players.length; x++) {
+                        var charImage = raphaelImage;
+                        switch(players[x].skin){
+                            case 'leonardo':
+                                charImage = leonardoImage;
+                                break;
+                            case 'michelangelo':
+                                charImage = michelangeloImage;
+                                break;
+                            case 'donatello':
+                                charImage = donatelloImage;
+                                break;
+                            case 'ghost':
+                                charImage = ghostImage;
+                                break;
+                        }
+
+                        ctx.drawImage(
+                            charImage,
+                            players[x].dirX,
+                            players[x].dirY,
                             objectSizes - 2,
                             objectSizes,
-                            item.posX * objectSizes + 10,
-                            item.posY * objectSizes + 10,
-                            objectSizes,
-                            objectSizes
+                            players[x].posX * objectSizes + 10,
+                            players[x].posY * objectSizes + 10,
+                            objectSizes*1.5,
+                            objectSizes*1.5
                         );
-                    });
 
+                        if(players[x].chat) {
+                            ctx.font = '16px Chlorinar';
+                            ctx.fillStyle = "rgb(0, 0, 0, 0.8)";
+                            ctx.fillText(players[x].chat.message, players[x].posX * objectSizes + 15, players[x].posY * objectSizes - 5);
+                        }
 
+                    }
                 }
 
                 /**
@@ -328,12 +311,6 @@
                  */
                 function check_collision(x, y) {
                     var foundCollision = false;
-
-                    //collision stone temple
-                    if ((x > 3 && x < 9 && y == 6) || (x > 4 && x < 9 && (y == 5 || y == 4 || y == 3))) {
-                        console.log('Read the stone');
-                        foundCollision = true;
-                    }
 
                     //collision with de edges
                     if (
@@ -347,7 +324,6 @@
                         (x > 17 && (y == 19 || y == 20)) || //left corner
                         (x > 19 && (y == 17 || y == 18)) //left corner 2
                     ) {
-                        console.log('Wiiiiilllsoooonnnnnn......help-me');
                         foundCollision = true;
                     }
 
@@ -361,32 +337,21 @@
                  * @name board
                  */
                 function board() {
-                    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-                    ctx.fillRect(w - 100, h - 70, 100, 70);
+                    for(var x=0;x<4;x++){
+                        ctx.fillStyle = '#003d92';
+                        ctx.fillRect(30+(x*110), h - 70, 100, 40);
+                    }
 
                     ctx.font = '18px Arial';
                     ctx.fillStyle = 'rgba(255, 255, 255, 1)';
-                    ctx.fillText('You Found', w - 93, h - 45);
 
-                    ctx.font = '14px Arial';
-                    ctx.fillStyle = 'rgba(255, 255, 255, 1)';
-                    ctx.fillText(score + ' poketballs', w - 85, h - 25);
-                }
-
-                /**
-                 * Decide here if all the assets are ready to start updating
-                 * @function
-                 * @name assetsLoaded
-                 */
-                function assetsLoaded() {
-                    if (
-                        terrainImageLoaded == true &&
-                        houseImageLoaded == true &&
-                        pokeballImageLoaded == true &&
-                        playerImageLoaded == true
-                    ) {
-                        pokeball.generatePosition();
-                        update();
+                    ctx.drawImage(charsImage, 160, 0, 79, 68, 35, h - 65, 40, 29); 
+                    ctx.drawImage(charsImage, 0, 0, 79, 68, 365, h - 65, 40, 29); 
+                    ctx.drawImage(charsImage, 79, 0, 79, 68, 255, h - 65, 40, 29); 
+                    ctx.drawImage(charsImage, 240, 0, 79, 68, 145, h - 65, 40, 29);     
+                    
+                    for(var x=0;x<players.length;x++) {
+                        ctx.fillText(players[x].score, 85+(110*x), h - 43);
                     }
                 }
 
@@ -400,6 +365,10 @@
                     else if (e.keyCode == '38') player.move('up');
                     else if (e.keyCode == '39') player.move('right');
                     else if (e.keyCode == '40') player.move('down');
+                    else if (e.keyCode == '13') {
+                        var textchat = window.prompt("Cowabunga, something bro!!! (only 20 characters)","");
+                        socket.emit('sendChat', (textchat.length>20 ? textchat.substr(0,19) : textchat));
+                    };
                 };
             };
         </script>
