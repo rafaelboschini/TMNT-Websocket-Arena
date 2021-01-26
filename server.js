@@ -1,6 +1,5 @@
 const express = require('express');
 const path = require('path');
-
 const app = express();
 const server = require('http').createServer(app);
 const io = require('socket.io')(server);
@@ -10,10 +9,12 @@ app.set('views', path.join(__dirname, 'public'));
 app.engine('html', require('ejs').renderFile);
 app.set('view engine','html');
 
+//Create a index route
 app.use('/', (req, res) => {
     res.render('index.html');
 });
 
+//variables responsible to handles with players and pizzas information
 var players = [];
 var pizzaloc = {x:0,y:0};
 
@@ -29,10 +30,12 @@ io.on('connection', socket => {
     socket.on('sendPos', data => {
         var filtered = players.filter(item=> item.userId===socket.id);
 
-        if(filtered.length===0) {   
+        if(filtered.length===0) {
             data.serverTimestamp = Date.now();         
             data.userId = socket.id;
             data.score = 0;
+
+            //Here we decide how skin the player has to be
             switch(players.length+1){
                 case 1:
                     data.skin = "raphael";
@@ -50,8 +53,9 @@ io.on('connection', socket => {
                     data.skin = "ghost"; //this skin is for specters waiting to play
             }
 
-            players.push(data);
-        } else {            
+            players.push(data); //Add a new player in game
+        } else {
+            
             filtered[0].serverTimestamp = Date.now();
             filtered[0].posX = data.posX;
             filtered[0].posY = data.posY;
@@ -60,7 +64,7 @@ io.on('connection', socket => {
         }
         
         if(pizzaloc.x === 0 && pizzaloc.y === 0){
-            gen_pizza();
+            generate_pizza(); //mama mia!!!
         }
 
         //Clear chat
@@ -80,7 +84,7 @@ io.on('connection', socket => {
     socket.on('catch', () => {
         var filtered = players.filter(item=> item.userId===socket.id);
         filtered[0].score += 1;
-        gen_pizza();
+        generate_pizza(); //cowabunga!
 
         io.sockets.emit('updatePlayers', players);
         io.sockets.emit('pizzaLocation',pizzaloc);
@@ -96,7 +100,13 @@ io.on('connection', socket => {
     });
 });
 
-function gen_pizza() {
+/**
+ * function that decides a new position for a delicious pizza!!!
+ * @function
+ * @name generate_pizza
+
+ */
+function generate_pizza() {
     do {
         pizzaloc.x = Math.floor(Math.random() * 20) + 1;
         pizzaloc.y = Math.floor(Math.random() * 16) + 4;
@@ -105,6 +115,12 @@ function gen_pizza() {
     pizzaloc.spritePosition = Math.floor(Math.random() * 4) + 0; // get position from 0-4    
 }
 
+/**
+ * function that decides a new position for a delicious pizza!!!
+ * @function
+ * @name generate_pizza
+ * @todo We need to replace this function because its repeats on client-side.
+ */
 function check_collision(x, y) {
     var foundCollision = false;
 
